@@ -86,6 +86,10 @@ class RobinhoodBroker:
         # All auth state is in-memory only — never persisted anywhere.
         self._access_token: str | None = None
         self._account_number: str | None = None   # resolved from get_accounts
+        # RFC 8707 resource indicator (MCP 2025-06-18 requires it in auth + token
+        # requests). Defaults to the MCP URL; refined from protected-resource
+        # metadata when available.
+        self._resource: str = mcp_url
         self._session_id: str | None = None
         self._initialized = False
         self._rpc_id = 0
@@ -207,6 +211,7 @@ class RobinhoodBroker:
                 servers = meta.get("authorization_servers") or []
                 auth_server = servers[0] if servers else None
                 scopes = meta.get("scopes_supported") or []
+                self._resource = meta.get("resource") or self.mcp_url
         if auth_server is None:
             # Fall back to the MCP host itself as the authorization server.
             auth_server = str(httpx.URL(self.mcp_url).copy_with(path=""))
@@ -255,6 +260,7 @@ class RobinhoodBroker:
             "code_challenge": challenge,
             "code_challenge_method": "S256",
             "state": state,
+            "resource": self._resource,          # RFC 8707 (required by MCP)
             **({"scope": " ".join(scopes)} if scopes else {}),
         })
         return str(url)
@@ -278,6 +284,7 @@ class RobinhoodBroker:
             "redirect_uri": self.callback_url,
             "client_id": self._oauth["client_id"],
             "code_verifier": verifier,
+            "resource": self._resource,          # RFC 8707 (required by MCP)
         })
         if r.status_code != 200:
             raise BrokerError(f"Robinhood token exchange failed: HTTP {r.status_code}")
