@@ -52,6 +52,31 @@ def _b64url(data: bytes) -> str:
     return base64.urlsafe_b64encode(data).decode().rstrip("=")
 
 
+def _wellknown_candidates(issuer: str) -> list[str]:
+    """OAuth 2.0 Authorization Server Metadata URLs to try, in order.
+
+    RFC 8414 §3.1: when the issuer has a path component, the well-known segment
+    is INSERTED between the host and that path
+    (https://host/.well-known/oauth-authorization-server/path) — it is NOT
+    appended after the path. Robinhood's issuer is
+    https://agent.robinhood.com/mcp/trading, so the appended form 404s and only
+    the inserted form resolves (verified against the live endpoint). We try the
+    RFC-correct inserted forms first, then the appended forms for servers that
+    use the legacy layout, de-duplicated (both coincide for a root issuer)."""
+    u = httpx.URL(issuer)
+    netloc = u.netloc.decode("ascii") if isinstance(u.netloc, (bytes, bytearray)) \
+        else str(u.netloc)
+    origin = f"{u.scheme}://{netloc}"
+    path = u.path.rstrip("/")
+    urls: list[str] = []
+    for wk in ("/.well-known/oauth-authorization-server",
+               "/.well-known/openid-configuration"):
+        for cand in (origin + wk + path, issuer.rstrip("/") + wk):
+            if cand not in urls:
+                urls.append(cand)
+    return urls
+
+
 class RobinhoodBroker:
     def __init__(self, mcp_url: str, callback_url: str):
         self.mcp_url = mcp_url
@@ -188,16 +213,19 @@ class RobinhoodBroker:
 
         if "authorization_endpoint" not in self._oauth:
             discovered = None
-            for path in ("/.well-known/oauth-authorization-server",
-                         "/.well-known/openid-configuration"):
-                r = await self._http.get(auth_server.rstrip("/") + path)
+            for url in _wellknown_candidates(auth_server):
+                r = await self._http.get(url)
                 if r.status_code == 200:
-                    discovered = r.json()
+                    try:
+                        discovered = r.json()
+                    except ValueError:
+                        continue
                     break
             if not discovered:
                 raise BrokerError(
-                    "Could not discover Robinhood's login service. Check that "
-                    "agentic trading is enabled on your Robinhood account "
+                    "Could not discover Robinhood's login service (no OAuth "
+                    f"metadata found for {auth_server}). Check that agentic "
+                    "trading is enabled on your Robinhood account "
                     "(see BROKER_INTEGRATION.md).")
             self._oauth = discovered
 
