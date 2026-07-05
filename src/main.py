@@ -459,46 +459,41 @@ async def _show_detail(chat_id: int, pid: str) -> None:
                     confirm_keyboard(pid, row["action"]))
 
 
-async def _confirm_and_place(tenant, chat_id: int, pid: str) -> None:
-    """TAP 2 of 2 — the ONLY path to place_order in this entire codebase.
+async def execute_confirmed_order(tenant, pid: str) -> dict:
+    """THE ONLY path to place_order in this entire codebase — channel-agnostic.
 
-    Sequence: atomic claim -> fresh re-verification of the ORIGINAL numeric
-    rule -> place -> log. Any failure stops with the exact reason. No retry."""
+    Called by BOTH the Telegram Confirm button and the web app's Buy button, so
+    the money-placing safety is written exactly once: atomic claim -> fresh
+    re-verification of the ORIGINAL numeric rule -> place -> log. Any failure
+    stops with the exact reason. No retry, ever.
+
+    Returns a structured outcome the caller renders for its channel:
+      outcome ∈ 'placed' | 'already' | 'auth' | 'reverify_error' | 'stale'
+                | 'broker_error'
+    """
     row = await A.db.claim_for_confirm(pid)
     if row is None:
         cur = await A.db.get_proposal(pid)
         status = cur["status"] if cur else "gone"
-        await A.tg.send(chat_id, f"Not placed — this proposal is already "
-                        f"<b>{esc(status)}</b>.")
-        return
+        return {"ok": False, "outcome": "already", "status": status}
+
+    base = {"symbol": row["symbol"], "action": row["action"], "qty": row["qty"],
+            "condition_check": row["condition_check"]}
 
     # Re-fetch live data NOW and re-check the original rule (same request).
     try:
         holds, fresh = await verify_condition_fresh(A.broker, row)
     except NeedsAuth as e:
-        await A.db.finalize_proposal(pid, "error",
-                                     note="auth expired at confirm")
-        await A.tg.send(chat_id, "Not placed — Robinhood login expired. "
-                        "Log in and scan again:\n" + esc(e.auth_url))
-        return
+        await A.db.finalize_proposal(pid, "error", note="auth expired at confirm")
+        return {**base, "ok": False, "outcome": "auth", "auth_url": e.auth_url}
     except BrokerError as e:
-        await A.db.finalize_proposal(pid, "error",
-                                     note=f"reverify failed: {e}")
-        await A.tg.send(chat_id, "Not placed — couldn't re-verify with live "
-                        f"data:\n<code>{esc(str(e)[:300])}</code>")
-        return
+        await A.db.finalize_proposal(pid, "error", note=f"reverify failed: {e}")
+        return {**base, "ok": False, "outcome": "reverify_error", "error": str(e)}
 
     if not holds:
         await A.db.finalize_proposal(pid, "stale",
                                      execution_result={"fresh_check": fresh})
-        cc = row["condition_check"]
-        await A.tg.send(chat_id, (
-            "🛑 <b>Not placed.</b> The rule that fired no longer holds on "
-            "live data:\n"
-            f"Rule: <code>{esc(str(cc))}</code>\n"
-            f"Fresh values: <code>{esc(str(fresh))}</code>\n"
-            "Run /scan again if you still want to look."))
-        return
+        return {**base, "ok": False, "outcome": "stale", "fresh": fresh}
 
     side = "buy" if row["action"] == "BUY" else "sell"
     try:
@@ -508,18 +503,45 @@ async def _confirm_and_place(tenant, chat_id: int, pid: str) -> None:
         msg = e.auth_url if isinstance(e, NeedsAuth) else str(e)
         await A.db.finalize_proposal(pid, "error",
                                      execution_result={"error": str(e)[:800]})
-        await A.tg.send(chat_id, "❌ <b>Order NOT placed.</b> Robinhood said:\n"
-                        f"<code>{esc(msg[:400])}</code>\n"
-                        "Nothing was retried. Check the app if unsure, then "
-                        "/scan again when ready.")
-        return
+        return {**base, "ok": False, "outcome": "broker_error", "error": msg}
 
     await A.db.finalize_proposal(pid, "confirmed", execution_result=result)
-    await A.tg.send(chat_id, (
-        f"✅ <b>Order placed:</b> {esc(row['action'])} {row['qty']} "
-        f"{esc(row['symbol'])} (market, day).\n"
-        f"Fresh check passed: <code>{esc(str(fresh.get('checked')))}</code>\n"
-        "Robinhood's reply is logged. /portfolio to see it land."))
+    return {**base, "ok": True, "outcome": "placed", "fresh": fresh,
+            "result": result}
+
+
+async def _confirm_and_place(tenant, chat_id: int, pid: str) -> None:
+    """TAP 2 of 2 in Telegram — renders execute_confirmed_order() for the chat."""
+    r = await execute_confirmed_order(tenant, pid)
+    outcome = r["outcome"]
+    if outcome == "already":
+        await A.tg.send(chat_id, "Not placed — this proposal is already "
+                        f"<b>{esc(r['status'])}</b>.")
+    elif outcome == "auth":
+        await A.tg.send(chat_id, "Not placed — Robinhood login expired. "
+                        "Log in and scan again:\n" + esc(r["auth_url"]))
+    elif outcome == "reverify_error":
+        await A.tg.send(chat_id, "Not placed — couldn't re-verify with live "
+                        f"data:\n<code>{esc(str(r['error'])[:300])}</code>")
+    elif outcome == "stale":
+        await A.tg.send(chat_id, (
+            "🛑 <b>Not placed.</b> The rule that fired no longer holds on "
+            "live data:\n"
+            f"Rule: <code>{esc(str(r['condition_check']))}</code>\n"
+            f"Fresh values: <code>{esc(str(r['fresh']))}</code>\n"
+            "Run /scan again if you still want to look."))
+    elif outcome == "broker_error":
+        await A.tg.send(chat_id, "❌ <b>Order NOT placed.</b> Robinhood said:\n"
+                        f"<code>{esc(str(r['error'])[:400])}</code>\n"
+                        "Nothing was retried. Check the app if unsure, then "
+                        "/scan again when ready.")
+    else:  # placed
+        fresh = r.get("fresh") or {}
+        await A.tg.send(chat_id, (
+            f"✅ <b>Order placed:</b> {esc(r['action'])} {r['qty']} "
+            f"{esc(r['symbol'])} (market, day).\n"
+            f"Fresh check passed: <code>{esc(str(fresh.get('checked')))}</code>\n"
+            "Robinhood's reply is logged. /portfolio to see it land."))
 
 
 # ================================================================== oauth ==
