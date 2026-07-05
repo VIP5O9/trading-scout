@@ -42,16 +42,23 @@ from your phone's web browser. No computer needed. Budget 30–45 minutes.
 6. **Deploy on Render**
    - Go to https://render.com and tap **Sign up**, choosing **GitHub** so Render
      can see your fork.
-   - Tap **New +** → **Web Service** → pick your `trade-scout` fork.
-   - Choose the **Free** instance type.
-   - In the **Environment Variables** section, add ALL FIVE values by exact name:
+   - Tap **New +** → **Blueprint** (NOT "Web Service"). This is important: only
+     the Blueprint flow reads the `render.yaml` in your fork and fills in the
+     build and start commands for you. A plain "Web Service" ignores that file
+     and leaves the start command blank/wrong, which fails the deploy.
+   - Pick your `trade-scout` fork. Render shows a plan with one free web service
+     already configured — tap **Apply** (some screens label it **Create**).
+   - Render then asks for the five secret values (they're marked "sync: false" in
+     the blueprint, so they're never stored in the repo). Add ALL FIVE by exact
+     name:
      - `DATABASE_URL` — the Neon connection string from step 2
      - `LLM_PROVIDER` — `anthropic`, `openai`, or `deepseek`
      - `LLM_API_KEY` — the key from step 3
      - `FINNHUB_API_KEY` — the key from step 4
      - `TELEGRAM_BOT_TOKEN` — the token from step 5
-   - Tap **Create Web Service** (some screens label it **Deploy**). Render reads
-     `render.yaml` for everything else. The first build takes a few minutes.
+   - The first build takes a few minutes. In the logs you should see `pip install`
+     pulling the dependencies, then `Uvicorn running on …`. The health check at
+     `/healthz` turns green when it's up.
    - **Good to know:** the free tier goes to sleep when idle. The first message
      after a quiet period can take up to ~1 minute while it wakes up. That's
      normal, not a bug.
