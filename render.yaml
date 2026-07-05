@@ -8,7 +8,12 @@ services:
     runtime: python
     plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: python -m uvicorn src.main:app --host 0.0.0.0 --port $PORT
+    # --workers 1 is REQUIRED, not a tuning choice: the Robinhood OAuth state and
+    # the in-memory session token live in a single process. More than one worker
+    # splits them, so the login callback and later scans hit different workers and
+    # auth breaks. Keep this even on paid plans (where Render may otherwise raise
+    # WEB_CONCURRENCY above 1).
+    startCommand: python -m uvicorn src.main:app --host 0.0.0.0 --port $PORT --workers 1
     healthCheckPath: /healthz
     envVars:
       - key: DATABASE_URL        # Neon Postgres connection string

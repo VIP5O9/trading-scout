@@ -292,6 +292,11 @@ class RobinhoodBroker:
         self._access_token = tok.get("access_token")
         if not self._access_token:
             raise BrokerError("Robinhood login reply contained no access token")
+        # Drop the pre-auth session so the re-handshake starts a fresh,
+        # authenticated MCP session (replaying the old unauthenticated
+        # Mcp-Session-Id alongside the bearer can be rejected).
+        self._session_id = None
+        self._account_number = None
         self._initialized = False   # re-handshake with the authenticated session
 
     # ------------------------------------------------------------- data ----
