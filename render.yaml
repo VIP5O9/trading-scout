@@ -1,0 +1,23 @@
+# Render.com blueprint: one free-tier web service. No worker, no cron — there is no
+# background scanning in this app; every scan is user-initiated from Telegram.
+# The Telegram webhook points at this same service (set automatically on startup
+# using Render's RENDER_EXTERNAL_URL).
+services:
+  - type: web
+    name: trade-scout
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn src.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /healthz
+    envVars:
+      - key: DATABASE_URL        # Neon Postgres connection string
+        sync: false
+      - key: LLM_PROVIDER        # anthropic | openai | deepseek
+        sync: false
+      - key: LLM_API_KEY
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN  # from @BotFather
+        sync: false
+      - key: FINNHUB_API_KEY     # free tier, for news
+        sync: false

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% set active = "portfolio" %}
+
+{% block title %}Portfolio{% endblock %}
+
+{% block content %}
+    <h1>Portfolio</h1>
+
+    <div class="card">
+        <h2>Account value</h2>
+        <p class="big-stat">{{ equity }}</p>
+    </div>
+
+    <div class="card">
+        <h2>Buying power</h2>
+        <p class="big-stat">{{ buying_power }}</p>
+    </div>
+
+    {% if positions %}
+        {% for position in positions %}
+            <div class="card position-card">
+                <div class="position-header">
+                    <span class="symbol">{{ position.symbol }}</span>
+                    <span class="qty-cost">{{ position.qty }} @ {{ position.avg_cost }}</span>
+                </div>
+                <div class="position-details">
+                    <span class="last-price">{{ position.last_price }}</span>
+                    <span class="pnl {% if position.pnl_positive %}positive{% else %}negative{% endif %}">
+                        {{ position.pnl_usd }} ({{ position.pnl_pct }})
+                    </span>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="card">
+            <p>No positions yet.</p>
+        </div>
+    {% endif %}
+{% endblock %}

@@ -1,0 +1,31 @@
+{
+  "phase_1_core": {
+    "status": "complete",
+    "scope": "broker client, LLM adapters + fallback, Telegram bot with tenant lock, strategy interview, scan/propose, two-tap confirm with live re-verification",
+    "verified": [
+      "py_compile clean on all src modules",
+      "single place_order call site (two-tap confirm handler only)",
+      "webhook idempotency via processed_updates(update_id) + atomic shown->confirming claim",
+      "tenant lock rejects non-owner before any processing",
+      "fallback JSON path retries exactly once then raises SchemaValidationError"
+    ]
+  },
+  "phase_2_views": {
+    "status": "complete",
+    "scope": "portfolio view, sector analysis, market intel/premarket brief, gated web UI",
+    "verified": [
+      "web routes render read-only templates only; gated by one-time /weblink magic link + HttpOnly session cookie",
+      "sector momentum computed from broker historicals, no new dependency",
+      "brief labeled as LLM interpretation, budget-checked"
+    ]
+  },
+  "phase_3_news": {
+    "status": "complete",
+    "scope": "Finnhub integration, news_cache table, 1h TTL on-demand refresh",
+    "verified": [
+      "cache-first with 1h TTL; refetch only on user /news request",
+      "finnhub daily cap tracked under api_calls service='finnhub', separate from LLM cap"
+    ]
+  },
+  "published": null
+}

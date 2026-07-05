@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+.env.*
+*.local
+tenants/*
+!tenants/example/
+.DS_Store

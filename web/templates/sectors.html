@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% set active = "sectors" %}
+
+{% block title %}Sector Momentum{% endblock %}
+
+{% block content %}
+    <h1>Sector momentum &mdash; 20-day return</h1>
+
+    <div class="card">
+        {% if rows %}
+            <ul class="sector-list">
+                {% for row in rows %}
+                    <li>
+                        <span class="rank">{{ row.rank }}.</span>
+                        <span class="symbol">{{ row.symbol }}</span>
+                        <div class="bar-container">
+                            <div class="bar {% if row.return_20d_pct >= 0 %}positive{% else %}negative{% endif %}" style="width: {{ row.bar_pct }}%;"></div>
+                        </div>
+                        <span class="return {% if row.return_20d_pct >= 0 %}positive{% else %}negative{% endif %}">{{ '%.2f'|format(row.return_20d_pct) }}%</span>
+                        <span class="last-close">{{ row.last_close }}</span>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No sector data available.</p>
+        {% endif %}
+    </div>
+
+    <p class="footnote">Data generated at {{ generated_at }}. Momentum ranking is information, not a recommendation.</p>
+{% endblock %}

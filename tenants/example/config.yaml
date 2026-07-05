@@ -1,0 +1,11 @@
+# Example tenant config — the SETUP interview produces this shape.
+# The live copy is stored in the database (Render's disk is ephemeral);
+# this file documents the format.
+tenant: example
+llm_provider: anthropic        # anthropic | openai | deepseek
+risk:
+  max_position_pct: 5.0        # max % of account equity in a single position
+  max_llm_calls_per_day: 40    # hard cap; /scan refuses politely once reached
+broker:
+  type: robinhood
+  oauth: browser               # login happens in the user's own browser, never stored

@@ -1,0 +1,236 @@
+:root {
+    --bg-color: #1a1a1a;
+    --text-color: #e0e0e0;
+    --card-bg-color: #2a2a2a;
+    --border-color: #444;
+    --link-color: #8ab4f8; /* A soft blue for links */
+    --link-hover-color: #a6c8ff;
+    --positive-color: #6aa84f; /* Green for positive P&L/returns */
+    --negative-color: #cc0000; /* Red for negative P&L/returns */
+    --active-nav-color: #ffffff;
+    --footer-text-color: #999;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    margin: 0;
+    padding: 0;
+    line-height: 1.6;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+main {
+    flex-grow: 1;
+    max-width: 480px;
+    margin: 1rem auto;
+    padding: 0 1rem;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+h1 {
+    font-size: 1.8rem;
+    margin-bottom: 1.5rem;
+    color: var(--active-nav-color);
+}
+
+h2 {
+    font-size: 1.3rem;
+    margin-top: 0;
+    margin-bottom: 1rem;
+    color: var(--active-nav-color);
+}
+
+header {
+    background-color: var(--card-bg-color);
+    border-bottom: 1px solid var(--border-color);
+    padding: 0.5rem 0;
+}
+
+nav {
+    display: flex;
+    justify-content: space-around;
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+nav a {
+    color: var(--link-color);
+    text-decoration: none;
+    padding: 0.8rem 1rem;
+    font-size: 1.1rem;
+    transition: color 0.2s ease-in-out, background-color 0.2s ease-in-out;
+    border-radius: 8px;
+}
+
+nav a:hover {
+    color: var(--link-hover-color);
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+nav a.active {
+    color: var(--active-nav-color);
+    font-weight: bold;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.card {
+    background-color: var(--card-bg-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.pre-wrap {
+    white-space: pre-wrap;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.stat-row:last-child {
+    border-bottom: none;
+}
+
+.big-stat {
+    font-size: 2rem;
+    font-weight: bold;
+    text-align: center;
+    margin: 0.5rem 0;
+}
+
+.position-card {
+    display: flex;
+    flex-direction: column;
+}
+
+.position-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 0.5rem;
+}
+
+.position-header .symbol {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--active-nav-color);
+}
+
+.position-header .qty-cost {
+    font-size: 0.9rem;
+    color: var(--footer-text-color);
+}
+
+.position-details {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.position-details .last-price {
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.pnl {
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.pnl.positive {
+    color: var(--positive-color);
+}
+
+.pnl.negative {
+    color: var(--negative-color);
+}
+
+.sector-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.sector-list li {
+    display: grid;
+    grid-template-columns: 0.5fr 1fr 2fr 1fr 1fr;
+    align-items: center;
+    padding: 0.7rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    gap: 0.5rem;
+}
+
+.sector-list li:last-child {
+    border-bottom: none;
+}
+
+.sector-list .rank {
+    font-weight: bold;
+    text-align: right;
+    padding-right: 0.5rem;
+}
+
+.sector-list .symbol {
+    font-weight: bold;
+    color: var(--active-nav-color);
+}
+
+.bar-container {
+    background-color: rgba(255, 255, 255, 0.1);
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.bar {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s ease-in-out;
+}
+
+.bar.positive {
+    background-color: var(--positive-color);
+}
+
+.bar.negative {
+    background-color: var(--negative-color);
+}
+
+.sector-list .return {
+    font-weight: bold;
+    text-align: right;
+}
+
+.sector-list .last-close {
+    font-size: 0.85rem;
+    color: var(--footer-text-color);
+    text-align: right;
+}
+
+.footnote {
+    font-size: 0.85rem;
+    color: var(--footer-text-color);
+    text-align: center;
+    margin-top: 2rem;
+}
+
+footer {
+    margin-top: 2rem;
+    padding: 1rem;
+    text-align: center;
+    font-size: 0.9rem;
+    color: var(--footer-text-color);
+    border-top: 1px solid var(--border-color);
+    background-color: var(--card-bg-color);
+}

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% set active = "status" %}
+
+{% block title %}{{ tenant_name }} Status{% endblock %}
+
+{% block content %}
+    <h1>{{ tenant_name }}</h1>
+
+    <div class="card">
+        <h2>Your strategy</h2>
+        <p class="pre-wrap">{{ strategy_summary }}</p>
+    </div>
+
+    <div class="card">
+        <h2>Today</h2>
+        <div class="stat-row">
+            <span>Proposals shown:</span>
+            <span>{{ proposals_today }}</span>
+        </div>
+        <div class="stat-row">
+            <span>LLM calls used:</span>
+            <span>{{ llm_used }} of {{ llm_cap }}</span>
+        </div>
+        <div class="stat-row">
+            <span>Last scan:</span>
+            <span>{{ last_scan }}</span>
+        </div>
+    </div>
+{% endblock %}
