@@ -4,7 +4,7 @@ Welcome! Follow these steps to get your own copy running — everything here wor
 from your phone's web browser. No computer needed. Budget 30–45 minutes.
 
 1. **Fork the repository**
-   - Open your mobile browser and go to https://github.com/VIP5O9/trade-scout
+   - Open your mobile browser and go to https://github.com/VIP5O9/trading-scout
    - Tap **Sign up** to create a GitHub account if you don't have one.
    - Once logged in, tap **Fork**, then tap **Create fork**.
    - **Privacy note:** forks of a public repo are public by default. No secrets

@@ -27,5 +27,5 @@
       "finnhub daily cap tracked under api_calls service='finnhub', separate from LLM cap"
     ]
   },
-  "published": null
+  "published": "https://github.com/VIP5O9/trading-scout"
 }
