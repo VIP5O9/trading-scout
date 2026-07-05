@@ -21,11 +21,19 @@ import hashlib
 import json
 import re
 import secrets
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import httpx
 
 PROTOCOL_VERSION = "2025-06-18"
+
+# Map the old span-style windows callers pass to a lookback in days, since the
+# real get_equity_historicals tool takes an explicit start_time, not a span.
+_SPAN_DAYS = {
+    "week": 7, "month": 31, "3month": 93, "6month": 186,
+    "year": 372, "5year": 1830,
+}
 
 
 class BrokerError(Exception):
@@ -52,6 +60,7 @@ class RobinhoodBroker:
         self._lock = asyncio.Lock()
         # All auth state is in-memory only — never persisted anywhere.
         self._access_token: str | None = None
+        self._account_number: str | None = None   # resolved from get_accounts
         self._session_id: str | None = None
         self._initialized = False
         self._rpc_id = 0
@@ -259,6 +268,29 @@ class RobinhoodBroker:
                 return d[k]
         return None
 
+    async def _ensure_account(self) -> str:
+        """Resolve (and cache) the agentic-trading-enabled account_number, which
+        get_portfolio / get_equity_positions / place_equity_order all require.
+        The token is per-user; we pick the account flagged agentic_allowed."""
+        if self._account_number:
+            return self._account_number
+        data = await self._call_tool("get_accounts", {})
+        rows = data if isinstance(data, list) else (
+            self._pick(data, "accounts", "results", "data") or []
+            if isinstance(data, dict) else [])
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            num = self._pick(row, "account_number", "account", "number")
+            allowed = self._pick(row, "agentic_allowed", "agentic")
+            if num and allowed:
+                self._account_number = str(num)
+                return self._account_number
+        raise BrokerError(
+            "No agentic-trading-enabled Robinhood account was found. Enable "
+            "agentic trading in the Robinhood app first (see "
+            "BROKER_INTEGRATION.md), then send /connect again.")
+
     async def get_quote(self, symbol: str) -> dict:
         """Live quote: {symbol, price, previous_close, updated_at}."""
         data = await self._call_tool("get_equity_quotes", {"symbols": [symbol]})
@@ -289,8 +321,12 @@ class RobinhoodBroker:
     async def get_historicals(self, symbol: str, interval: str = "day",
                               span: str = "3month") -> list[dict]:
         """Daily closes, chronologically ascending: [{begins_at, close}, ...]."""
+        # The real tool takes an explicit RFC3339 start_time, not a span.
+        start = datetime.now(timezone.utc) - timedelta(
+            days=_SPAN_DAYS.get(span, 93))
         data = await self._call_tool("get_equity_historicals", {
-            "symbols": [symbol], "interval": interval, "span": span})
+            "symbols": [symbol], "interval": interval,
+            "start_time": start.strftime("%Y-%m-%dT%H:%M:%SZ")})
         rows: list = []
         node: Any = data
         if isinstance(node, dict):
@@ -316,11 +352,15 @@ class RobinhoodBroker:
         return out
 
     async def get_portfolio(self) -> dict:
-        data = await self._call_tool("get_portfolio", {})
+        account = await self._ensure_account()
+        data = await self._call_tool("get_portfolio",
+                                     {"account_number": account})
         return data if isinstance(data, dict) else {"raw": data}
 
     async def get_positions(self) -> list[dict]:
-        data = await self._call_tool("get_equity_positions", {})
+        account = await self._ensure_account()
+        data = await self._call_tool("get_equity_positions",
+                                     {"account_number": account})
         if isinstance(data, dict):
             data = self._pick(data, "positions", "results", "data") or []
         return [p for p in data if isinstance(p, dict)] if isinstance(data, list) else []
@@ -339,12 +379,15 @@ class RobinhoodBroker:
             raise BrokerError(f"Invalid order side {side!r}")
         if not isinstance(qty, int) or qty < 1:
             raise BrokerError(f"Invalid order quantity {qty!r}")
+        account = await self._ensure_account()
         result = await self._call_tool("place_equity_order", {
+            "account_number": account,
             "symbol": symbol.upper(),
             "side": side,
-            "order_type": "market",
-            "time_in_force": "day",
-            "quantity": qty,
+            "type": "market",              # real param is `type`, not `order_type`
+            "time_in_force": "gfd",        # real values are gfd | gtc, never "day"
+            "market_hours": "regular_hours",
+            "quantity": str(qty),          # tool expects a string quantity
         })
         return result if isinstance(result, dict) else {"raw": result}
 

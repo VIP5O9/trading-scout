@@ -43,7 +43,10 @@ What this guarantees:
 - Any broker error during placement (insufficient funds, symbol not found,
   connection error) is shown to you verbatim and the flow STOPS. Order
   placement is never auto-retried — a retry could double-buy.
-- Market orders, whole shares, regular hours, day time-in-force.
+- Market orders, whole shares, regular hours, good-for-day (`gfd`) time-in-force.
+- Orders, portfolio, and positions are scoped to the account flagged
+  `agentic_allowed` on your Robinhood login; the app looks this up automatically
+  via `get_accounts` after you connect.
 
 ## Scope
 
