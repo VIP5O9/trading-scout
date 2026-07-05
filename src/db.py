@@ -191,6 +191,14 @@ class Database:
         return await self.pool.fetchrow(
             "SELECT * FROM proposals WHERE id=$1::uuid", proposal_id)
 
+    async def open_proposals(self, tenant_id: int, limit: int = 20) -> list:
+        """The agent's still-actionable suggestions (status='shown'), newest
+        first — what the app lists with Buy/Sell buttons."""
+        return await self.pool.fetch(
+            """SELECT * FROM proposals
+               WHERE tenant_id=$1 AND status='shown'
+               ORDER BY proposed_at DESC LIMIT $2""", tenant_id, limit)
+
     async def claim_for_confirm(self, proposal_id: str) -> asyncpg.Record | None:
         """Atomically move shown -> confirming. Returns the row only for the ONE
         caller that wins; a double-tap or webhook retry gets None."""

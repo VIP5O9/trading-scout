@@ -14,13 +14,15 @@ Execution model (permanent shape, not a setting):
 """
 from __future__ import annotations
 
+import hashlib
 import secrets
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 import yaml
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import (FileResponse, HTMLResponse, JSONResponse,
+                               RedirectResponse)
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -52,6 +54,7 @@ class App:
     finnhub: FinnhubClient = None
     engine_prompt: str = ""
     web_sessions: set[str] = set()   # in-memory; a restart just means /weblink again
+    pin_ok: set[str] = set()         # session ids that have entered the app PIN
 
 
 A = App()
