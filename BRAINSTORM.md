@@ -81,6 +81,13 @@ The owner added, verbatim in intent:
    the heavy work."
 5. Asked for an honest, in-depth read scoping the entire project.
 
+**Correction (round 7):** point 4 was misread at first as runtime providers
+for the app. The owner clarified: these models are the **build-time
+workforce** — helpers that do heavy lifting *while building* (the same
+pattern BUILD_LOG.md already records with OpenRouter delegation). They do
+**not** participate in the running app. The app's runtime brain stays
+whatever single provider the owner configures via `LLM_PROVIDER`.
+
 The honest read follows.
 
 ### Round 6 — resolving the honest read's open questions
@@ -89,9 +96,12 @@ The honest read follows.
   instance (supported today, zero code). No guest-view feature, no
   multi-user. The "web app for my friend" ask is satisfied by the template
   nature of the repo itself; the owner's instance stays single-owner.
-- **DeepSeek: bulk work only.** High-volume, non-personal jobs (news
-  summarization, digest drafting). Strategy translation and critique stay on
-  a top-tier provider. Never the sole brain for anything safety-relevant.
+- **DeepSeek: bulk work only.** (Answered before the round-7 correction, so
+  it now applies to the *build-time* workforce: DeepSeek and friends draft
+  high-volume, non-personal material; anything safety-relevant is owned and
+  reviewed by the coordinator. At runtime the owner simply picks one
+  provider via `LLM_PROVIDER`, with the China-hosting privacy note from
+  honest-read §1 to weigh if that pick is DeepSeek.)
 - **Phase order: B then A.** Rule-book intelligence ships first so the
   4-week track record measures the *improved* strategy from day one.
 - **Virtual balance: flat $10,000.** Round benchmark number, easy to compare
@@ -135,36 +145,35 @@ So the real question decomposes into three honest answers:
   another provider. This is a privacy call only you can make — flagged as an
   open question below.
 
-### 2. The multi-LLM "fleet" (Ollama, Grok, DeepSeek, Gemini)
+### 2. The multi-LLM workforce (Ollama, Grok, DeepSeek, Gemini) — build-time only
 
-**Adapters are the easy 10%.** Grok (x.ai), Gemini, and Ollama all expose
-OpenAI-compatible chat endpoints, and the codebase already has an
-OpenAI-style code path — each new provider is roughly a base-URL + auth
-header + default-model entry. Cheap to add, low risk.
+**Clarified by the owner: these models help BUILD the project; they do not
+participate in the running app.** This matches the pattern BUILD_LOG.md
+already documents — delegate a well-specified chunk to a cheap model, then
+the coordinator reviews line-by-line and fixes or rewrites before anything is
+integrated. The log's own record shows why the review step is non-negotiable:
+delegated output came back "structurally complete but thin," with missing
+steps and wrong specifics that the coordinator caught and corrected.
 
-**The honest 90%:** today the LLM has very little to do — translate an
-interview, write a brief. A fleet with nothing to work on is dead weight.
-The fleet only earns its place if the rule-book intelligence work (below)
-creates real jobs: strategy critique, archetype matching, news → watchlist
-relevance scoring, weekly digest narration. Then a routing table makes sense:
+Honest rules of engagement for using this workforce in future build sessions:
 
-| Job | Right tier | Why |
-|---|---|---|
-| Strategy translation & critique | Strongest available (Anthropic/OpenAI/Gemini) | Correctness is safety-relevant; runs rarely |
-| Weekly digest narration | Mid tier (DeepSeek/Gemini free tier) | Frequent, low stakes, cost matters |
-| News/bulk summarization | Cheapest (DeepSeek) or local (Ollama) | High volume, zero personal data needed |
+- **Good delegation targets:** boilerplate (templates, CSS, doc drafts),
+  bulk research summaries, first drafts of archetype write-ups, test-case
+  enumeration. High volume, low blast radius, easy to verify by reading.
+- **Never delegated without coordinator rewrite-level review:** anything in
+  the confirm path, order placement, rule evaluation/re-verification, or the
+  safety rails. For these, delegate drafts at most; the coordinator owns the
+  final code.
+- **Verification is the bottleneck, not tokens.** More helper models don't
+  shorten the critical path — review discipline does. Delegate to save
+  typing, not to save thinking.
+- **Ollama practicality:** fine as a local build helper on the owner's
+  machine. Grok/DeepSeek/Gemini via API (or OpenRouter, as BUILD_LOG already
+  does) for bulk drafting.
 
-**Ollama-specific honesty:** the app runs on Render; Ollama runs on your home
-machine. Render cannot reach it unless you expose your machine to the
-internet (Tailscale Funnel, ngrok, etc.) and keep it awake 24/7. That's real
-operational burden and a new attack surface on a box you own. Ollama makes
-sense only if (a) you accept running a tunnel, or (b) a future mode runs the
-whole app locally. Recommendation: build the provider registry so Ollama is a
-config entry, but don't make anything *depend* on it.
-
-**Also honest:** "computer power to do all the heavy work" doesn't shorten
-the critical path here. The heavy work in this project is design and
-verification discipline, not tokens. More models ≠ more validity.
+**Runtime consequence: none.** The app keeps its existing single-provider
+adapter (`LLM_PROVIDER` = anthropic | openai | deepseek). No provider
+registry, no routing table, no new runtime adapters are planned.
 
 ### 3. Rule-book intelligence — "valid strategies only"
 
@@ -255,15 +264,16 @@ Orders remain Telegram-only, two-tap.
 - Phase B: rule-book intelligence — strategy critic + curated archetype
   library + verifiable metric expansion (RSI-14, volume ratio, ATR distance,
   pct_from_20d_low, sma200 family). LLM never gains order authority.
-- Phase C: multi-provider registry (Gemini, Grok, Ollama-as-config) with
-  job-tier routing; only after Phase B gives the fleet real jobs.
-- **Build order: B → A → C.** Rule-book intelligence first, then
-  paper-trade + scheduled scans, then the provider fleet.
+- **Build order: B → A.** Rule-book intelligence first, then paper-trade +
+  scheduled scans. There is no Phase C: Ollama/Grok/DeepSeek/Gemini are
+  build-time helpers only (round-7 correction) — no runtime provider
+  registry, no routing table, no new adapters.
 - Friend access: **self-host only** — the friend deploys their own instance
   from this repo. No guest view, no multi-user. Owner's instance stays
   single-owner.
-- DeepSeek: **bulk, non-personal work only**; strategy translation/critique
-  stay on a top-tier provider.
+- Build-time delegation: helper models may draft bulk/non-safety material;
+  the coordinator reviews everything and owns all safety-relevant code
+  (honest-read §2 rules of engagement).
 - Virtual paper account starts at **$10,000** flat.
 - On-demand paper view: `/paper` command + read-only web page (spec default).
 
@@ -306,10 +316,7 @@ new metric computes from Robinhood daily historicals already available.
    confirmation, …), each with rules in the app's own vocabulary and an
    honest paragraph on when it historically works and fails. The interview
    may offer "your words are closest to X" — adoption is opt-in.
-4. **LLM routing groundwork:** strategy translation and critique pinned to
-   the configured top-tier provider; DeepSeek reserved for bulk non-personal
-   jobs (news summarization). No new providers in this build.
-5. Honesty requirement carried into all engine text: the critic and library
+4. Honesty requirement carried into all engine text: the critic and library
    never claim a strategy is profitable — only coherent, expressible, and
    testable. The paper record (Build 2) is the validity court.
 
@@ -344,13 +351,46 @@ bar is met.
    pages are visually labeled as paper; confirming a REAL order still works
    exactly as today and is never triggered by paper activity.
 
-### Build 3 — provider fleet (Phase C, only after B and A are live)
+*(A former "Build 3 — provider fleet" was removed by the round-7 correction:
+Ollama/Grok/DeepSeek/Gemini are build-time helpers, not runtime providers.)*
 
-1. Extend `src/llm/runtime.py` with Gemini and Grok (both OpenAI-style) and
-   Ollama as a config-only entry (base_url; document the tunnel requirement
-   honestly — nothing may hard-depend on Ollama being reachable).
-2. Introduce a job→tier routing table (translation/critique → top tier;
-   digest narration → mid tier; news/bulk → cheap tier), config-overridable,
-   with the DeepSeek bulk-only stance as the shipped default.
-3. Fallback chain per job tier; budget tracking per provider, mirroring the
-   existing api_calls pattern.
+---
+
+## Round 8 — the cousin's onboarding (2026-07-06)
+
+Context shift from the owner: the repo's purpose is a copy of a working
+setup so a **cousin with no PC** can run it; the cousin is stuck at
+SETUP_GUIDE step 8 (Connect Robinhood). Investigated and fixed first, ahead
+of Builds 1–2.
+
+Verified facts (Robinhood support wording, July 2026):
+
+- Agentic Trading access is a **gradual rollout** — Robinhood emails when an
+  account has it. The cousin may simply not have access yet.
+- Robinhood **requires a desktop browser** to open the agentic account and
+  authenticate the agent — which broke the guide's "no computer needed"
+  promise through no fault of the app.
+- Setup creates a **separate, funded Agentic account**; this app's
+  `agentic_allowed` account lookup matches that design exactly.
+
+Fixes shipped (docs only, no code):
+
+- SETUP_GUIDE: honest intro caveat + "before you start" access check; step 8
+  rewritten as a/b/c/d/e with phone-only desktop workarounds (borrowed
+  computer, library, "Request desktop site"), the funded-account step, an
+  error-message troubleshooting table matching the app's actual error
+  strings, and a strongly-recommended free uptime pinger on `/healthz` so
+  the in-memory Robinhood session survives Render free-tier sleeps
+  (re-login becomes rare instead of every quiet hour).
+- BROKER_INTEGRATION: prerequisite section expanded with the same verified
+  facts.
+
+Deferred, flagged for a future build decision (touches auth — not done
+unilaterally): the OAuth client already registers the `refresh_token` grant
+but `handle_oauth_callback` never uses the refresh token, and persisting one
+would violate the no-stored-credentials guarantee. If re-login friction
+stays painful for the cousin even with the pinger, the honest options are
+(a) in-memory refresh-token use only (helps while awake, still dies with the
+process) or (b) revisiting the no-persistence guarantee with eyes open.
+The keep-awake pinger also becomes required infrastructure for Build 2's
+scheduled scans anyway.

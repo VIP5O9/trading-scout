@@ -1,7 +1,19 @@
 # Setup Guide for trade-scout
 
 Welcome! Follow these steps to get your own copy running — everything here works
-from your phone's web browser. No computer needed. Budget 30–45 minutes.
+from your phone's web browser, **with one exception that is outside this app's
+control**: Robinhood requires a desktop browser once, in step 8, to set up
+agentic trading on their side. Budget 30–45 minutes plus that one desktop visit.
+
+**Before you start — check two Robinhood things first** (they can take days, so
+don't leave them for last):
+
+- You need a regular **Robinhood individual account in good standing**.
+- **Agentic Trading access is rolling out gradually** — it may not be available
+  on your account yet. Robinhood emails you when you have access; check
+  https://robinhood.com/us/en/agentic-trading/ from your Robinhood login. If
+  you don't have access yet, you can still do every other step of this guide
+  today and finish step 8 when the email arrives.
 
 1. **Fork the repository**
    - Open your mobile browser and go to https://github.com/VIP5O9/trading-scout
@@ -69,13 +81,52 @@ from your phone's web browser. No computer needed. Budget 30–45 minutes.
      owner, permanently. Do this from your own account right away.
 
 8. **Connect Robinhood**
-   - IMPORTANT: **agentic trading** must ALREADY be enabled on your Robinhood
-     account before this works. That is done inside Robinhood's own app/site —
-     this app cannot and will not do it for you.
-   - Send `/connect` to your bot. It sends a Robinhood login link — open it,
+
+   This is the one step with requirements on Robinhood's side that this app
+   cannot change or work around (their rules, verified July 2026):
+
+   - **a. Have access.** Agentic Trading is rolling out gradually; Robinhood
+     emails you when your account has it (see "Before you start" above).
+   - **b. One-time desktop setup.** Robinhood's own support page says: *"You
+     can only open an agentic account and authenticate your agent on a desktop
+     device. If you're connecting… on a mobile device, copy the onboarding URL
+     and open it in a desktop browser."* No computer of your own? Any of these
+     works for the ~10 minutes needed:
+     - a family member's or friend's computer — **you** type your Robinhood
+       password on Robinhood's own page; nothing about this app is installed
+       on their machine and no password ever touches this app;
+     - a library computer (log out of Robinhood when done);
+     - your phone browser's **"Request desktop site"** mode — sometimes
+       enough, not guaranteed.
+   - **c. Create and fund the agentic account.** During that desktop
+     authentication, Robinhood has you create a **separate Agentic account**
+     with its own dedicated budget. That budget is the only money proposals
+     from this app can ever trade — pick a number you're comfortable with.
+   - **d. Connect the bot.** Send `/connect` to your bot. It replies with a
+     Robinhood login link — open it (on the desktop for the first-time setup),
      log in on Robinhood's own page, and approve. Your password never touches
-     this app, and nothing is stored: after the app has been asleep you'll
-     simply be asked to log in again.
+     this app, and nothing is stored. Telegram shows "✅ Robinhood connected"
+     when it works.
+   - **e. Expect occasional re-logins — and make them rare.** The free tier
+     sleeps when idle, and this app deliberately never stores broker tokens,
+     so after a sleep you'll be asked to `/connect` again. First-time setup
+     definitely needs the desktop; later re-logins may work straight from your
+     phone — try the link on your phone before hunting for a computer.
+     **Strongly recommended:** set up a free uptime pinger (e.g.
+     https://uptimerobot.com or https://cron-job.org) to request
+     `https://YOUR-APP.onrender.com/healthz` every 10 minutes. That keeps the
+     app awake so your Robinhood session survives instead of dying every quiet
+     hour. (One always-on free service fits within Render's free monthly
+     hours.)
+
+   **If something fails here, match the message:**
+   - *"Login link expired or already used"* → send `/connect` again; each link
+     is single-use, and a link goes stale if the app slept after sending it.
+   - *"No agentic-trading-enabled Robinhood account was found"* → step **c**
+     isn't done: the Agentic account doesn't exist or isn't funded yet, or
+     access (step **a**) hasn't been granted to your Robinhood login.
+   - *"Could not discover Robinhood's login service"* → almost always means
+     agentic access isn't active on your account yet (step **a**).
 
 9. **Set your strategy and scan**
    - The bot runs a 5-question interview as a normal chat: what to watch, what

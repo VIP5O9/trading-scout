@@ -14,6 +14,20 @@ this works, and that happens inside Robinhood's own app/site. This repo does
 not automate that step and will not work around it. If the login link from
 `/connect` errors out, this prerequisite is the first thing to check.
 
+What "enabled" means in practice (Robinhood's rules, verified July 2026):
+
+- Access is **rolling out gradually** — Robinhood emails you when your
+  account has it. No access yet = nothing here can connect.
+- You need an existing individual account in good standing, and during setup
+  Robinhood has you create a **separate, dedicated Agentic account** funded
+  with its own budget. This app's `get_accounts` lookup selects exactly that
+  account (the one flagged `agentic_allowed`) — a regular account never
+  qualifies, which is what the "No agentic-trading-enabled Robinhood account
+  was found" error means.
+- Robinhood requires a **desktop browser** to open the agentic account and
+  authenticate the agent the first time. See SETUP_GUIDE.md step 8 for the
+  phone-only workarounds.
+
 ## OAuth browser flow and the no-credential-storage guarantee
 
 Authentication is an OAuth 2.1 browser flow with PKCE: the bot sends you a
