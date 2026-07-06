@@ -120,7 +120,11 @@ class RobinhoodBroker:
             self._rpc_id += 1
             body["id"] = self._rpc_id
 
-        resp = await self._http.post(self.mcp_url, json=body, headers=headers)
+        try:
+            resp = await self._http.post(self.mcp_url, json=body, headers=headers)
+        except httpx.HTTPError as exc:
+            raise BrokerError(
+                f"Could not reach Robinhood's endpoint: {exc}") from exc
         if resp.status_code == 401:
             # Token missing/expired: start (or restart) the browser OAuth flow.
             self._access_token = None
@@ -205,7 +209,11 @@ class RobinhoodBroker:
         auth_server = None
         scopes: list[str] = []
         if m:
-            r = await self._http.get(m.group(1))
+            try:
+                r = await self._http.get(m.group(1))
+            except httpx.HTTPError as exc:
+                raise BrokerError(
+                    f"Could not reach Robinhood's login service: {exc}") from exc
             if r.status_code == 200:
                 meta = r.json()
                 servers = meta.get("authorization_servers") or []
@@ -219,7 +227,11 @@ class RobinhoodBroker:
         if "authorization_endpoint" not in self._oauth:
             discovered = None
             for url in _wellknown_candidates(auth_server):
-                r = await self._http.get(url)
+                try:
+                    r = await self._http.get(url)
+                except httpx.HTTPError as exc:
+                    raise BrokerError(
+                        f"Could not reach Robinhood's login service: {exc}") from exc
                 if r.status_code == 200:
                     try:
                         discovered = r.json()
@@ -235,13 +247,17 @@ class RobinhoodBroker:
             self._oauth = discovered
 
         if "client_id" not in self._oauth and self._oauth.get("registration_endpoint"):
-            r = await self._http.post(self._oauth["registration_endpoint"], json={
-                "client_name": "trade-scout (self-hosted)",
-                "redirect_uris": [self.callback_url],
-                "grant_types": ["authorization_code", "refresh_token"],
-                "response_types": ["code"],
-                "token_endpoint_auth_method": "none",
-            })
+            try:
+                r = await self._http.post(self._oauth["registration_endpoint"], json={
+                    "client_name": "trade-scout (self-hosted)",
+                    "redirect_uris": [self.callback_url],
+                    "grant_types": ["authorization_code", "refresh_token"],
+                    "response_types": ["code"],
+                    "token_endpoint_auth_method": "none",
+                })
+            except httpx.HTTPError as exc:
+                raise BrokerError(
+                    f"Could not reach Robinhood's login service: {exc}") from exc
             if r.status_code not in (200, 201):
                 raise BrokerError(
                     f"Robinhood client registration failed: HTTP {r.status_code}")
@@ -278,14 +294,18 @@ class RobinhoodBroker:
         if verifier is None:
             raise BrokerError("Login link expired or already used — send /connect "
                               "in Telegram to get a fresh one.")
-        r = await self._http.post(self._oauth["token_endpoint"], data={
-            "grant_type": "authorization_code",
-            "code": code,
-            "redirect_uri": self.callback_url,
-            "client_id": self._oauth["client_id"],
-            "code_verifier": verifier,
-            "resource": self._resource,          # RFC 8707 (required by MCP)
-        })
+        try:
+            r = await self._http.post(self._oauth["token_endpoint"], data={
+                "grant_type": "authorization_code",
+                "code": code,
+                "redirect_uri": self.callback_url,
+                "client_id": self._oauth["client_id"],
+                "code_verifier": verifier,
+                "resource": self._resource,      # RFC 8707 (required by MCP)
+            })
+        except httpx.HTTPError as exc:
+            raise BrokerError(
+                f"Robinhood token exchange failed to connect: {exc}") from exc
         if r.status_code != 200:
             raise BrokerError(f"Robinhood token exchange failed: HTTP {r.status_code}")
         tok = r.json()
